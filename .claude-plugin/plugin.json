@@ -1,0 +1,11 @@
+{
+  "name": "team-review",
+  "version": "1.0.0",
+  "description": "Mandatory pre-commit quality gate for Claude Code. Runs parallel code reviews (security, performance, simplicity) with adversarial debate before allowing commits.",
+  "author": {
+    "name": "xukaifu"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/xukaifu/team-review",
+  "keywords": ["code-review", "quality-gate", "security", "performance", "pre-commit"]
+}
