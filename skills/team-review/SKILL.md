@@ -1,6 +1,6 @@
 ---
 name: team-review
-description: Mandatory pre-commit quality gate. Runs parallel code reviews (security, performance, simplicity) with adversarial debate, then tests, before allowing git commit. Invoke with /team-review [n] [guidance] where n is max review rounds (default 3) and guidance is optional review focus instructions.
+description: Pre-commit quality gate with parallel code reviews and adversarial debate. Usage: /team-review [n] [guidance] (n = max rounds, default 1). Use /team-review off|on to toggle the gate.
 ---
 
 # Team Review — Pre-Commit Quality Gate Orchestrator
@@ -13,16 +13,23 @@ You are orchestrating a mandatory code review process. Follow each phase exactly
 $ARGUMENTS
 ```
 
-Parse arguments:
+### Special commands
+
+- `off` → Create `.team-review-disabled` in the project root. Tell the user **"Team review gate disabled. Claude can commit freely. Run /team-review on to re-enable."** and **STOP**.
+- `on` → Remove `.team-review-disabled` from the project root. Tell the user **"Team review gate re-enabled."** and **STOP**.
+
+### Review arguments
+
+Parse remaining arguments:
 1. If the first word is a valid integer, use it as `MAX_ROUNDS` and treat the remaining text as `USER_GUIDANCE`.
-2. If the first word is not a number, default `MAX_ROUNDS` to **3** and treat the entire input as `USER_GUIDANCE`.
-3. If empty, `MAX_ROUNDS` = **3** and `USER_GUIDANCE` = empty.
+2. If the first word is not a number, default `MAX_ROUNDS` to **1** and treat the entire input as `USER_GUIDANCE`.
+3. If empty, `MAX_ROUNDS` = **1** and `USER_GUIDANCE` = empty.
 
 Examples:
-- `/team-review` → MAX_ROUNDS=3, no guidance
-- `/team-review 5` → MAX_ROUNDS=5, no guidance
+- `/team-review` → MAX_ROUNDS=1, no guidance
+- `/team-review 3` → MAX_ROUNDS=3, no guidance
 - `/team-review 3 遵守安全、高效的原则` → MAX_ROUNDS=3, USER_GUIDANCE="遵守安全、高效的原则"
-- `/team-review focus on SQL injection risks` → MAX_ROUNDS=3, USER_GUIDANCE="focus on SQL injection risks"
+- `/team-review focus on SQL injection risks` → MAX_ROUNDS=1, USER_GUIDANCE="focus on SQL injection risks"
 
 ## Pre-flight Checks
 
@@ -84,27 +91,29 @@ Where `{GUIDANCE_BLOCK}` is:
 - If `USER_GUIDANCE` is non-empty: `"\n\nUser review guidance: {USER_GUIDANCE}"`
 - If `USER_GUIDANCE` is empty: `""` (omit entirely)
 
-Wait for all agents to complete. The **devil-advocate's output** is the authoritative result.
+Print exactly one status line after dispatching:
+
+**"⏳ 4 reviewers working in parallel — results will appear below when debate concludes."**
+
+Then wait silently for all agents to complete. Do **NOT** print any additional waiting/status messages. The **devil-advocate's output** is the authoritative result.
 
 ### Step 1.4 — Present Findings
 
-Parse the devil-advocate's confirmed findings. Display to the user:
+Parse the devil-advocate's confirmed findings. Display to the user using tables. Only show severity levels that have findings — omit empty sections.
 
 ```
-## Review Round {round}/{MAX_ROUNDS}
+## Round {round}/{MAX_ROUNDS} — {confirmed_count} confirmed, {rejected_count} rejected
 
-### Confirmed Findings
+| # | Severity | Category | Location | Issue | Fix |
+|---|----------|----------|----------|-------|-----|
+| 1 | CRITICAL | {category} | {file}:{lines} | {title} | {fix} |
+| 2 | HIGH | {category} | {file}:{lines} | {title} | {fix} |
+| 3 | LOW | {category} | {file}:{lines} | {title} | {fix} |
 
-#### CRITICAL
-1. [{category}] {file}:{lines} — {title}
-   Fix: {fix}
-
-#### HIGH
-2. [{category}] {file}:{lines} — {title}
-   Fix: {fix}
-
-### Rejected (no action)
-- [{category}] {title} — {rejection_reason}
+Rejected:
+| Category | Issue | Reason |
+|----------|-------|--------|
+| {category} | {title} | {rejection_reason} |
 ```
 
 If **no confirmed findings** (empty `confirmed_findings` array): convergence reached. Print **"Review converged — no issues found."** and proceed to **Phase 2**.
@@ -117,7 +126,7 @@ Ask the user: **"Apply these fixes? (y/n)"**
 
 ### Step 1.6 — Apply Fixes
 
-For each confirmed finding, apply the recommended fix using Edit tool. Then re-stage all modified files:
+For each **CRITICAL** and **HIGH** confirmed finding, apply the recommended fix using Edit tool. Skip **LOW** findings (shown for awareness only). Then re-stage all modified files:
 ```bash
 git add <modified-files>
 ```
@@ -188,6 +197,6 @@ Tell the user: **"Commit successful. Gate file cleaned up."**
 - **Safe, efficient, simple** — only change what must be changed.
 - The devil-advocate's default stance is to **keep the original code**.
 - Burden of proof is on the reviewers.
-- Only **CONFIRMED-CRITICAL** and **CONFIRMED-HIGH** findings get fixed.
+- **CONFIRMED-CRITICAL** and **CONFIRMED-HIGH** findings get fixed. **CONFIRMED-LOW** findings are shown but not auto-fixed — user decides.
 - **REJECTED** findings are left untouched.
 - Each review round operates on the **full** `git diff --cached`, not incremental changes.
