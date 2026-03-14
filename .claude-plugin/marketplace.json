@@ -1,0 +1,22 @@
+{
+  "name": "team-review",
+  "owner": {
+    "name": "xukaifu"
+  },
+  "metadata": {
+    "description": "Pre-commit quality gate with parallel code reviews and adversarial debate",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "team-review",
+      "source": ".",
+      "description": "Mandatory pre-commit quality gate for Claude Code. Runs parallel code reviews (security, performance, simplicity) with adversarial debate before allowing commits.",
+      "version": "1.0.0",
+      "author": {
+        "name": "xukaifu"
+      },
+      "keywords": ["code-review", "quality-gate", "security", "performance", "pre-commit"]
+    }
+  ]
+}
