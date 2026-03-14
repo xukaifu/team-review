@@ -1,6 +1,6 @@
 ---
 name: team-review
-description: Mandatory pre-commit quality gate. Runs parallel code reviews (security, performance, simplicity) with adversarial debate, then tests, before allowing git commit. Invoke with /team-review [n] where n is max review rounds (default 3).
+description: Mandatory pre-commit quality gate. Runs parallel code reviews (security, performance, simplicity) with adversarial debate, then tests, before allowing git commit. Invoke with /team-review [n] [guidance] where n is max review rounds (default 3) and guidance is optional review focus instructions.
 ---
 
 # Team Review — Pre-Commit Quality Gate Orchestrator
@@ -13,7 +13,16 @@ You are orchestrating a mandatory code review process. Follow each phase exactly
 $ARGUMENTS
 ```
 
-Parse the first word as the maximum review round count (integer). Default to **3** if empty or not a valid number. Store as `MAX_ROUNDS`.
+Parse arguments:
+1. If the first word is a valid integer, use it as `MAX_ROUNDS` and treat the remaining text as `USER_GUIDANCE`.
+2. If the first word is not a number, default `MAX_ROUNDS` to **3** and treat the entire input as `USER_GUIDANCE`.
+3. If empty, `MAX_ROUNDS` = **3** and `USER_GUIDANCE` = empty.
+
+Examples:
+- `/team-review` → MAX_ROUNDS=3, no guidance
+- `/team-review 5` → MAX_ROUNDS=5, no guidance
+- `/team-review 3 遵守安全、高效的原则` → MAX_ROUNDS=3, USER_GUIDANCE="遵守安全、高效的原则"
+- `/team-review focus on SQL injection risks` → MAX_ROUNDS=3, USER_GUIDANCE="focus on SQL injection risks"
 
 ## Pre-flight Checks
 
@@ -54,22 +63,26 @@ Dispatch **4 agents in parallel** (all in the same team, all with `run_in_backgr
 1. **security-reviewer** — Agent tool with:
    - `subagent_type`: use the `security-reviewer` agent definition
    - `team_name`: "review-round-{round}"
-   - `prompt`: "Review this staged diff for security vulnerabilities:\n\n```diff\n{DIFF}\n```"
+   - `prompt`: "Review this staged diff for security vulnerabilities:\n\n```diff\n{DIFF}\n```{GUIDANCE_BLOCK}"
 
 2. **performance-reviewer** — Agent tool with:
    - `subagent_type`: use the `performance-reviewer` agent definition
    - `team_name`: "review-round-{round}"
-   - `prompt`: "Review this staged diff for performance regressions:\n\n```diff\n{DIFF}\n```"
+   - `prompt`: "Review this staged diff for performance regressions:\n\n```diff\n{DIFF}\n```{GUIDANCE_BLOCK}"
 
 3. **simplicity-reviewer** — Agent tool with:
    - `subagent_type`: use the `simplicity-reviewer` agent definition
    - `team_name`: "review-round-{round}"
-   - `prompt`: "Review this staged diff for unnecessary complexity:\n\n```diff\n{DIFF}\n```"
+   - `prompt`: "Review this staged diff for unnecessary complexity:\n\n```diff\n{DIFF}\n```{GUIDANCE_BLOCK}"
 
 4. **devil-advocate** — Agent tool with:
    - `subagent_type`: use the `devil-advocate` agent definition
    - `team_name`: "review-round-{round}"
-   - `prompt`: "Challenge the findings from security-reviewer, performance-reviewer, and simplicity-reviewer. The staged diff is:\n\n```diff\n{DIFF}\n```\n\nWait for their findings via SendMessage, then debate each finding (max 2 rounds per reviewer). Return the confirmed findings list."
+   - `prompt`: "Challenge the findings from security-reviewer, performance-reviewer, and simplicity-reviewer. The staged diff is:\n\n```diff\n{DIFF}\n```{GUIDANCE_BLOCK}\n\nWait for their findings via SendMessage, then debate each finding (max 2 rounds per reviewer). Return the confirmed findings list."
+
+Where `{GUIDANCE_BLOCK}` is:
+- If `USER_GUIDANCE` is non-empty: `"\n\nUser review guidance: {USER_GUIDANCE}"`
+- If `USER_GUIDANCE` is empty: `""` (omit entirely)
 
 Wait for all agents to complete. The **devil-advocate's output** is the authoritative result.
 
