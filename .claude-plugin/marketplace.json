@@ -10,7 +10,7 @@
   "plugins": [
     {
       "name": "team-review",
-      "source": ".",
+      "source": "./",
       "description": "Mandatory pre-commit quality gate for Claude Code. Runs parallel code reviews (security, performance, simplicity) with adversarial debate before allowing commits.",
       "version": "1.0.0",
       "author": {
