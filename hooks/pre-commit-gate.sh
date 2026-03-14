@@ -5,15 +5,12 @@
 
 set -euo pipefail
 
-GATE_FILE="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")/.team-review-gate.json"
 PHASE="${1:-pre}"
 
-# Read tool input from stdin
-INPUT=$(cat)
-
 # --- PostToolUse: clean up gate file after successful commit ---
-# Handled first, independently of command parsing, to avoid JSON schema mismatches
+# No need to read stdin — just check gate file and staged state
 if [[ "$PHASE" == "post" ]]; then
+  GATE_FILE="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")/.team-review-gate.json"
   if [[ -f "$GATE_FILE" ]] && git diff --cached --quiet 2>/dev/null; then
     rm -f "$GATE_FILE"
   fi
@@ -21,7 +18,8 @@ if [[ "$PHASE" == "post" ]]; then
 fi
 
 # --- PreToolUse: intercept git commit commands ---
-# Pattern match on raw JSON — no JSON parser needed for fixed-structure hook input
+# Read stdin and pattern match on raw JSON (no JSON parser needed)
+INPUT=$(cat)
 if ! printf '%s' "$INPUT" | grep -q '"Bash"' || ! printf '%s' "$INPUT" | grep -qE '\bgit\b.*\bcommit\b'; then
   echo '{"decision": "allow"}'
   exit 0
@@ -32,6 +30,9 @@ if printf '%s' "$INPUT" | grep -qE -- '--no-verify'; then
   echo '{"decision": "block", "reason": "The --no-verify flag is not allowed. Please run /team-review before committing."}'
   exit 0
 fi
+
+# From here on we need the gate file path — compute it only for git commit commands
+GATE_FILE="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")/.team-review-gate.json"
 
 if [[ ! -f "$GATE_FILE" ]]; then
   echo '{"decision": "block", "reason": "No review gate found. Please run /team-review before committing."}'
