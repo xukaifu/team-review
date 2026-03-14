@@ -1,6 +1,6 @@
 {
   "name": "team-review",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Mandatory pre-commit quality gate for Claude Code. Runs parallel code reviews (security, performance, simplicity) with adversarial debate before allowing commits.",
   "author": {
     "name": "xukaifu"
