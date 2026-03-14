@@ -5,7 +5,11 @@ A Claude Code plugin that enforces mandatory pre-commit quality gates. Code is r
 ## Install
 
 ```bash
-claude plugin add xukaifu/team-review
+# Add marketplace
+/plugin marketplace add xukaifu/dev-forge
+
+# Install plugin
+/plugin install team-review@dev-forge
 ```
 
 ## Usage
@@ -13,10 +17,28 @@ claude plugin add xukaifu/team-review
 Stage your changes, then run:
 
 ```
-/team-review [n]
+/team-review [n] [guidance]
 ```
 
-- `n` — max review rounds (default: 3)
+- `n` — max review rounds (default: 1)
+- `guidance` — optional review focus instructions
+
+Examples:
+
+```
+/team-review
+/team-review 3
+/team-review 3 focus on security and SQL injection
+/team-review off
+/team-review on
+```
+
+| Command | Effect |
+|---------|--------|
+| `/team-review` | Run review with 1 round |
+| `/team-review 3` | Run review with up to 3 rounds |
+| `/team-review off` | Disable the pre-commit gate |
+| `/team-review on` | Re-enable the pre-commit gate |
 
 The plugin blocks `git commit` inside Claude Code until the review process passes. Direct terminal `git commit` is unaffected.
 
@@ -33,9 +55,9 @@ Four agents run in parallel:
 | **simplicity-reviewer** | Over-abstraction, dead code, unnecessary complexity |
 | **devil-advocate** | Challenges all findings via adversarial debate |
 
-The devil-advocate's default stance is **keep the original code**. Burden of proof is on reviewers. Only **CONFIRMED-CRITICAL** and **CONFIRMED-HIGH** findings survive. Each reviewer gets up to 2 rounds of follow-up questions.
+The devil-advocate's default stance is **keep the original code**. Burden of proof is on reviewers. Only confirmed findings survive debate. Each reviewer gets up to 2 rounds of follow-up questions.
 
-After debate, confirmed findings are shown to the user for approval before any fix is applied.
+Results are presented in a table with a summary line. CRITICAL and HIGH findings are auto-fixed. LOW findings are shown for awareness only.
 
 **Convergence:** no confirmed findings → Phase 2. Fixes applied → re-review (full diff). Max rounds exceeded → user chooses to add rounds or abandon.
 
@@ -45,7 +67,7 @@ The **test-reviewer** agent runs change-related unit tests and e2e tests (if con
 
 ### Phase 3 — Commit
 
-A gate file (`.team-review-gate.json`) is written with a SHA-256 hash of the staged diff. The PreToolUse hook validates this gate before allowing `git commit`. The gate file is auto-cleaned after a successful commit.
+A gate file (`.team-review-gate.json`) is written with a hash of the staged diff. The PreToolUse hook validates this gate before allowing `git commit`. The gate file is auto-cleaned after a successful commit.
 
 ## Interrupt Recovery
 
@@ -74,8 +96,9 @@ team-review/
 ## Requirements
 
 - Claude Code CLI
-- `jq` (used by the hook script to parse JSON)
-- `shasum` (pre-installed on macOS/Linux)
+- Git
+
+No other external dependencies. The hook script uses only git, grep, and sed.
 
 ## License
 
