@@ -21,16 +21,14 @@ if [[ "$PHASE" == "post" ]]; then
 fi
 
 # --- PreToolUse: intercept git commit commands ---
-TOOL_NAME=$(printf '%s' "$INPUT" | jq -r '.tool_name // ""')
-COMMAND=$(printf '%s' "$INPUT" | jq -r '.tool_input.command // ""')
-
-if [[ "$TOOL_NAME" != "Bash" ]] || ! printf '%s' "$COMMAND" | grep -qE '\bgit\b.*\bcommit\b'; then
+# Pattern match on raw JSON — no JSON parser needed for fixed-structure hook input
+if ! printf '%s' "$INPUT" | grep -q '"Bash"' || ! printf '%s' "$INPUT" | grep -qE '\bgit\b.*\bcommit\b'; then
   echo '{"decision": "allow"}'
   exit 0
 fi
 
 # Block --no-verify explicitly
-if printf '%s' "$COMMAND" | grep -qE -- '--no-verify'; then
+if printf '%s' "$INPUT" | grep -qE -- '--no-verify'; then
   echo '{"decision": "block", "reason": "The --no-verify flag is not allowed. Please run /team-review before committing."}'
   exit 0
 fi
@@ -40,9 +38,9 @@ if [[ ! -f "$GATE_FILE" ]]; then
   exit 0
 fi
 
-# Verify staged diff hash matches the gate file
-CURRENT_HASH=$(git diff --cached | shasum -a 256 | cut -d' ' -f1)
-GATE_HASH=$(jq -r '.staged_diff_sha256' "$GATE_FILE")
+# Verify staged diff hash matches the gate file (git hash-object = no external deps)
+CURRENT_HASH=$(git diff --cached | git hash-object --stdin)
+GATE_HASH=$(sed -n 's/.*"staged_diff_hash" *: *"\([^"]*\)".*/\1/p' "$GATE_FILE")
 
 if [[ "$CURRENT_HASH" != "$GATE_HASH" ]]; then
   echo '{"decision": "block", "reason": "Staged files changed since review. Please run /team-review again."}'

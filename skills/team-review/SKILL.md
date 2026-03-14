@@ -28,8 +28,8 @@ Examples:
 
 1. Run `git diff --cached` — if output is empty, tell the user **"No staged files. Please `git add` your changes first."** and **STOP**.
 2. Check if `.team-review-gate.json` exists and is valid:
-   - Compute: `git diff --cached | shasum -a 256 | cut -d' ' -f1`
-   - If the gate file exists AND its `staged_diff_sha256` matches the computed hash → the review already passed and staged files are unchanged. Tell the user **"Review gate is still valid. Proceeding to commit."** and skip directly to **Phase 3, Step 3.2**.
+   - Compute: `git diff --cached | git hash-object --stdin`
+   - If the gate file exists AND its `staged_diff_hash` matches the computed hash → the review already passed and staged files are unchanged. Tell the user **"Review gate is still valid. Proceeding to commit."** and skip directly to **Phase 3, Step 3.2**.
 3. Ensure `.team-review-gate.json` is in the project's `.gitignore`. If `.gitignore` doesn't exist or doesn't contain the entry, add it.
 
 ---
@@ -152,9 +152,9 @@ Parse the test-reviewer's result:
 
 ### Step 3.1 — Write Gate File
 
-Compute the SHA-256 hash of the current staged diff:
+Compute the hash of the current staged diff:
 ```bash
-git diff --cached | shasum -a 256 | cut -d' ' -f1
+git diff --cached | git hash-object --stdin
 ```
 
 Write `.team-review-gate.json`:
@@ -162,7 +162,7 @@ Write `.team-review-gate.json`:
 {
   "version": 1,
   "timestamp": "{ISO-8601 timestamp}",
-  "staged_diff_sha256": "{hash}",
+  "staged_diff_hash": "{hash}",
   "review_rounds": {round},
   "status": "passed"
 }
