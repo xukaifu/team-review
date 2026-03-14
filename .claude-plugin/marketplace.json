@@ -1,10 +1,10 @@
 {
-  "name": "team-review",
+  "name": "xukaifu-plugins",
   "owner": {
     "name": "xukaifu"
   },
   "metadata": {
-    "description": "Pre-commit quality gate with parallel code reviews and adversarial debate",
+    "description": "Claude Code plugins by xukaifu",
     "version": "1.0.0"
   },
   "plugins": [
