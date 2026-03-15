@@ -62,21 +62,27 @@ Increment `round`. If `round > MAX_ROUNDS`:
 
 Run `git diff --cached` and store the full output as `DIFF`.
 
-### Step 1.3 — Dispatch Reviewers
+### Step 1.3 — Analyze Diff & Dispatch Reviewers
 
-Dispatch **3 agents in parallel** (all with `run_in_background: true`):
+Analyze the `DIFF` content to determine which review dimensions are relevant. Consider:
 
-1. **security-reviewer** — Agent tool with:
-   - `subagent_type`: use the `security-reviewer` agent definition
-   - `prompt`: "Review this staged diff for security vulnerabilities:\n\n```diff\n{DIFF}\n```{GUIDANCE_BLOCK}"
+- **What changed:** file types, language, domain (auth, API, UI, config, tests, docs, etc.)
+- **Scale:** a one-line fix needs fewer reviewers than a multi-file feature
+- **Risk areas:** code touching user input, credentials, database, external APIs, or concurrency warrants security review; hot paths warrant performance review; large refactors warrant simplicity review
 
-2. **performance-reviewer** — Agent tool with:
-   - `subagent_type`: use the `performance-reviewer` agent definition
-   - `prompt`: "Review this staged diff for performance regressions:\n\n```diff\n{DIFF}\n```{GUIDANCE_BLOCK}"
+Select **1–3 review dimensions** that are most relevant to this specific diff. Examples:
+- CSS-only change → `visual-consistency` (1 reviewer)
+- Auth endpoint change → `security`, `input-validation` (2 reviewers)
+- New feature with DB queries → `security`, `performance`, `simplicity` (3 reviewers)
+- Database migration → `data-integrity`, `performance` (2 reviewers)
+- Typo fix in README → skip reviewers entirely, proceed to Phase 2
 
-3. **simplicity-reviewer** — Agent tool with:
-   - `subagent_type`: use the `simplicity-reviewer` agent definition
-   - `prompt`: "Review this staged diff for unnecessary complexity:\n\n```diff\n{DIFF}\n```{GUIDANCE_BLOCK}"
+For each chosen dimension, dispatch an Agent (all with `run_in_background: true`):
+- `prompt`: Include the review dimension name, what to focus on, and the diff:
+  ```
+  "You are a code reviewer focused on {dimension}. Review this staged diff for {focus_description}. Return findings as a JSON array with fields: id, severity (CRITICAL/HIGH/LOW), file, lines, title, evidence, fix. Return empty array if no issues.\n\n```diff\n{DIFF}\n```{GUIDANCE_BLOCK}"
+  ```
+- Give each agent access to tools: `Grep, Glob, Read`
 
 Where `{GUIDANCE_BLOCK}` is:
 - If `USER_GUIDANCE` is non-empty: `"\n\nUser review guidance: {USER_GUIDANCE}"`
@@ -84,7 +90,7 @@ Where `{GUIDANCE_BLOCK}` is:
 
 Print exactly one status line after dispatching:
 
-**"⏳ 3 reviewers working in parallel — results will appear below when challenge concludes."**
+**"⏳ {N} reviewers ({dimension_list}) working in parallel — results will appear below when challenge concludes."**
 
 Then wait silently for all agents to complete. Do **NOT** print any additional waiting/status messages.
 
@@ -201,8 +207,8 @@ Tell the user: **"Commit successful. Gate file cleaned up."**
 ## Review Philosophy
 
 - **Safe, efficient, simple** — only change what must be changed.
-- The devil-advocate's default stance is to **keep the original code**.
-- Burden of proof is on the reviewers.
+- Default stance is to **keep the original code**. Burden of proof is on the reviewers.
+- Match reviewer count and focus to the diff — don't over-review trivial changes.
 - **CONFIRMED-CRITICAL** and **CONFIRMED-HIGH** findings get fixed. **CONFIRMED-LOW** findings are shown but not auto-fixed — user decides.
 - **REJECTED** findings are left untouched.
 - Each review round operates on the **full** `git diff --cached`, not incremental changes.
