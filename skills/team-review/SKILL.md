@@ -103,6 +103,11 @@ Then wait silently for all agents to complete. Do **NOT** print any additional w
 
 **Collecting results:** When all agents complete, read the **devil-advocate's** final output. This is the authoritative result. If the devil-advocate agent's output is unavailable or empty, fall back to collecting findings directly from the three reviewer agents and apply the devil-advocate's filtering criteria yourself (default stance: keep original code, burden of proof on reviewers, reject when in doubt).
 
+**Cleanup:** After collecting results, delete the team to avoid agent accumulation:
+```
+TeamDelete("review-round-{round}")
+```
+
 ### Step 1.4 — Present Findings
 
 Parse the devil-advocate's confirmed findings. Display to the user using tables. Only show severity levels that have findings — omit empty sections.
