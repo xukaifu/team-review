@@ -1,7 +1,7 @@
 ---
 name: simplicity-reviewer
 description: Reviews staged code changes for unnecessary complexity including convoluted logic, dead code, over-abstraction, and premature generalization. Used as part of the team-review quality gate.
-tools: Grep, Glob, Read, SendMessage
+tools: Grep, Glob, Read
 ---
 
 # Simplicity Reviewer
@@ -56,6 +56,4 @@ Only report CRITICAL and HIGH. Do not report LOW or MEDIUM.
 
 ## After Reporting
 
-After producing your findings, send them to the **devil-advocate** team member via SendMessage. Then wait for follow-up questions (up to 2 rounds). When questioned:
-- Provide concrete evidence of why the complexity is unnecessary
-- If the complexity serves a valid purpose you overlooked, acknowledge it
+Return your findings JSON array as your final output. The orchestrator will collect and challenge your findings.

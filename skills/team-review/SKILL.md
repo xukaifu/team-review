@@ -62,34 +62,21 @@ Increment `round`. If `round > MAX_ROUNDS`:
 
 Run `git diff --cached` and store the full output as `DIFF`.
 
-### Step 1.3 — Dispatch Review Team
+### Step 1.3 — Dispatch Reviewers
 
-Create a team:
-```
-TeamCreate("review-round-{round}")
-```
-
-Dispatch **4 agents in parallel** (all in the same team, all with `run_in_background: true`):
+Dispatch **3 agents in parallel** (all with `run_in_background: true`):
 
 1. **security-reviewer** — Agent tool with:
    - `subagent_type`: use the `security-reviewer` agent definition
-   - `team_name`: "review-round-{round}"
    - `prompt`: "Review this staged diff for security vulnerabilities:\n\n```diff\n{DIFF}\n```{GUIDANCE_BLOCK}"
 
 2. **performance-reviewer** — Agent tool with:
    - `subagent_type`: use the `performance-reviewer` agent definition
-   - `team_name`: "review-round-{round}"
    - `prompt`: "Review this staged diff for performance regressions:\n\n```diff\n{DIFF}\n```{GUIDANCE_BLOCK}"
 
 3. **simplicity-reviewer** — Agent tool with:
    - `subagent_type`: use the `simplicity-reviewer` agent definition
-   - `team_name`: "review-round-{round}"
    - `prompt`: "Review this staged diff for unnecessary complexity:\n\n```diff\n{DIFF}\n```{GUIDANCE_BLOCK}"
-
-4. **devil-advocate** — Agent tool with:
-   - `subagent_type`: use the `devil-advocate` agent definition
-   - `team_name`: "review-round-{round}"
-   - `prompt`: "Challenge the findings from security-reviewer, performance-reviewer, and simplicity-reviewer. The staged diff is:\n\n```diff\n{DIFF}\n```{GUIDANCE_BLOCK}\n\nWait for their findings via SendMessage, then debate each finding (max 2 rounds per reviewer). Return the confirmed findings list."
 
 Where `{GUIDANCE_BLOCK}` is:
 - If `USER_GUIDANCE` is non-empty: `"\n\nUser review guidance: {USER_GUIDANCE}"`
@@ -97,20 +84,28 @@ Where `{GUIDANCE_BLOCK}` is:
 
 Print exactly one status line after dispatching:
 
-**"⏳ 4 reviewers working in parallel — results will appear below when debate concludes."**
+**"⏳ 3 reviewers working in parallel — results will appear below when challenge concludes."**
 
 Then wait silently for all agents to complete. Do **NOT** print any additional waiting/status messages.
 
-**Collecting results:** When all agents complete, read the **devil-advocate's** final output. This is the authoritative result. If the devil-advocate agent's output is unavailable or empty, fall back to collecting findings directly from the three reviewer agents and apply the devil-advocate's filtering criteria yourself (default stance: keep original code, burden of proof on reviewers, reject when in doubt).
+### Step 1.4 — Challenge Findings (Devil's Advocate)
 
-**Cleanup:** After collecting results, delete the team to avoid agent accumulation:
-```
-TeamDelete("review-round-{round}")
-```
+After all 3 reviewers return, **you** (the orchestrator) act as the devil's advocate. Collect all findings and challenge each one:
 
-### Step 1.4 — Present Findings
+- **Default stance:** the original code should remain unchanged.
+- **Burden of proof** is on the reviewers, not the code author.
+- For each finding, ask: Is the evidence concrete? Is the severity realistic, not theoretical? Does the framework/runtime already handle this? Does the fix introduce new risks?
+- Classify each finding:
+  - **CONFIRMED-CRITICAL** — genuine, high-impact, concrete evidence
+  - **CONFIRMED-HIGH** — real issue with realistic impact
+  - **CONFIRMED-LOW** — minor issue worth noting
+  - **REJECTED** — theoretical, unsubstantiated, or marginal
 
-Parse the devil-advocate's confirmed findings. Display to the user using tables. Only show severity levels that have findings — omit empty sections.
+When in doubt, **REJECT**. False positives waste time and erode trust.
+
+### Step 1.5 — Present Findings
+
+Display confirmed and rejected findings to the user using tables. Only show severity levels that have findings — omit empty sections.
 
 ```
 ## Round {round}/{MAX_ROUNDS} — {confirmed_count} confirmed, {rejected_count} rejected
@@ -129,13 +124,13 @@ Rejected:
 
 If **no confirmed findings** (empty `confirmed_findings` array): convergence reached. Print **"Review converged — no issues found."** and proceed to **Phase 2**.
 
-### Step 1.5 — User Confirmation
+### Step 1.6 — User Confirmation
 
 Ask the user: **"Apply these fixes? (y/n)"**
 - **n** → Stop the process entirely.
-- **y** → Continue to Step 1.6.
+- **y** → Continue to Step 1.7.
 
-### Step 1.6 — Apply Fixes
+### Step 1.7 — Apply Fixes
 
 For each **CRITICAL** and **HIGH** confirmed finding, apply the recommended fix using Edit tool. Skip **LOW** findings (shown for awareness only). Then re-stage all modified files:
 ```bash
