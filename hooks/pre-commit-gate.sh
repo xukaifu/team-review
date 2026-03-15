@@ -6,41 +6,39 @@
 set -euo pipefail
 
 PHASE="${1:-pre}"
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
-
-# --- Disabled check: skip all gating if .team-review-disabled exists ---
-if [[ -f "$REPO_ROOT/.team-review-disabled" ]]; then
-  if [[ "$PHASE" == "pre" ]]; then
-    echo '{"decision": "allow"}'
-  fi
-  exit 0
-fi
 
 # --- PostToolUse: clean up gate file after successful commit ---
-# No need to read stdin — just check gate file and staged state
 if [[ "$PHASE" == "post" ]]; then
-  GATE_FILE="$REPO_ROOT/.team-review-gate.json"
-  if [[ -f "$GATE_FILE" ]] && git diff --cached --quiet 2>/dev/null; then
-    rm -f "$GATE_FILE"
+  REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+  if [[ -f "$REPO_ROOT/.team-review-gate.json" ]] && git diff --cached --quiet 2>/dev/null; then
+    rm -f "$REPO_ROOT/.team-review-gate.json"
   fi
   exit 0
 fi
 
 # --- PreToolUse: intercept git commit commands ---
-# Read stdin and pattern match on raw JSON (no JSON parser needed)
 INPUT=$(cat)
 if ! printf '%s' "$INPUT" | grep -q '"Bash"' || ! printf '%s' "$INPUT" | grep -qE '\bgit\b.*\bcommit\b'; then
   echo '{"decision": "allow"}'
   exit 0
 fi
 
-# Block --no-verify explicitly
+# --- From here: confirmed git commit command ---
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || echo ".")"
+
+# Disabled check
+if [[ -f "$REPO_ROOT/.team-review-disabled" ]]; then
+  echo '{"decision": "allow"}'
+  exit 0
+fi
+
+# Block --no-verify
 if printf '%s' "$INPUT" | grep -qE -- '--no-verify'; then
   echo '{"decision": "block", "reason": "The --no-verify flag is not allowed. Please run /team-review before committing."}'
   exit 0
 fi
 
-# From here on we need the gate file path — compute it only for git commit commands
+# Gate file check
 GATE_FILE="$REPO_ROOT/.team-review-gate.json"
 
 if [[ ! -f "$GATE_FILE" ]]; then
@@ -48,7 +46,7 @@ if [[ ! -f "$GATE_FILE" ]]; then
   exit 0
 fi
 
-# Verify staged diff hash matches the gate file (git hash-object = no external deps)
+# Verify staged diff hash matches
 CURRENT_HASH=$(git diff --cached | git hash-object --stdin)
 GATE_HASH=$(sed -n 's/.*"staged_diff_hash" *: *"\([^"]*\)".*/\1/p' "$GATE_FILE")
 

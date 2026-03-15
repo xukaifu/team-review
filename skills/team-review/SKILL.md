@@ -7,6 +7,10 @@ description: Pre-commit quality gate with parallel code reviews and adversarial 
 
 You are orchestrating a mandatory code review process. Follow each phase exactly.
 
+**Communication rules:**
+- Respond in the **same language** as the user's most recent message.
+- Keep output **minimal** — only print the status messages specified in each step. Do NOT narrate intermediate operations (git diff, hash computation, .gitignore checks, etc.). Execute them silently.
+
 ## Arguments
 
 ```
@@ -95,7 +99,9 @@ Print exactly one status line after dispatching:
 
 **"⏳ 4 reviewers working in parallel — results will appear below when debate concludes."**
 
-Then wait silently for all agents to complete. Do **NOT** print any additional waiting/status messages. The **devil-advocate's output** is the authoritative result.
+Then wait silently for all agents to complete. Do **NOT** print any additional waiting/status messages.
+
+**Collecting results:** When all agents complete, read the **devil-advocate's** final output. This is the authoritative result. If the devil-advocate agent's output is unavailable or empty, fall back to collecting findings directly from the three reviewer agents and apply the devil-advocate's filtering criteria yourself (default stance: keep original code, burden of proof on reviewers, reject when in doubt).
 
 ### Step 1.4 — Present Findings
 
