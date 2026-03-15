@@ -3,7 +3,7 @@
 # PreToolUse ("pre"): blocks git commit unless gate file is valid
 # PostToolUse ("post"): cleans up gate file after successful commit
 
-set -euo pipefail
+set -eu
 
 PHASE="${1:-pre}"
 
