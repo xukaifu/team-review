@@ -28,7 +28,7 @@ $ARGUMENTS
 
 ## Review Loop (max MAX_ROUNDS)
 
-1. **Dispatch** — Analyze the staged diff. Choose 1–3 relevant review dimensions based on what changed. Dispatch that many agents in parallel (`run_in_background: true`) with focused review prompts. Print one status line: `"⏳ {n} reviewers ({dimensions}) working — results below when done."`
+1. **Dispatch** — Analyze the staged diff. Choose relevant review dimensions based on what changed. Dispatch agents in parallel (`run_in_background: true`) with focused review prompts. Print one status line: `"⏳ {n} reviewers ({dimensions}) working — results below when done."`
 2. **Challenge** — When agents return, act as devil's advocate. Default stance: keep original code. Burden of proof on reviewers. Reject theoretical/unsubstantiated findings. Only confirm findings with concrete evidence.
 3. **Present** — Show confirmed and rejected findings in a table. If no confirmed findings → converged, proceed to **Test**.
 4. **Confirm** — Ask user to approve fixes. If rejected → **STOP**.

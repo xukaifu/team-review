@@ -27,7 +27,7 @@ The plugin blocks `git commit` inside Claude Code until review passes. Terminal 
 
 ## How It Works
 
-1. **Review** — Analyzes the diff, dispatches 1–3 reviewers in parallel based on what changed
+1. **Review** — Analyzes the diff, dispatches reviewers in parallel based on what changed
 2. **Challenge** — Orchestrator acts as devil's advocate, rejects unsubstantiated findings
 3. **Test** — Runs related tests if a test framework exists
 4. **Commit** — Writes a gate marker file, commits, then auto-cleans the marker
