@@ -1,6 +1,6 @@
 # team-review
 
-A Claude Code plugin that enforces pre-commit quality gates. Staged changes are reviewed by dynamically chosen parallel agents, then adversarially challenged before commit is allowed.
+A Claude Code plugin that reviews staged changes with dynamically chosen parallel agents and adversarial challenge.
 
 ## Install
 
@@ -17,22 +17,15 @@ A Claude Code plugin that enforces pre-commit quality gates. Staged changes are 
 
 | Command | Effect |
 |---------|--------|
-| `/team-review` | Review with 1 round |
+| `/team-review` | Review staged changes (1 round) |
 | `/team-review 3` | Review with up to 3 rounds |
 | `/team-review 3 focus on SQL injection` | Review with guidance |
-| `/team-review off` | Disable the gate |
-| `/team-review on` | Re-enable the gate |
-
-The plugin blocks `git commit` inside Claude Code until review passes. Terminal `git commit` is unaffected.
 
 ## How It Works
 
 1. **Review** — Analyzes the diff, dispatches reviewers in parallel based on what changed
 2. **Challenge** — Orchestrator acts as devil's advocate, rejects unsubstantiated findings
-3. **Test** — Runs related tests if a test framework exists
-4. **Commit** — Writes a gate marker file, commits, then auto-cleans the marker
-
-If fixes are applied, the loop repeats (up to max rounds).
+3. **Fix** — Applies confirmed fixes, re-stages, and re-reviews until converged or max rounds reached
 
 ## Structure
 
@@ -40,18 +33,14 @@ If fixes are applied, the loop repeats (up to max rounds).
 team-review/
 ├── .claude-plugin/
 │   └── plugin.json
-├── skills/
-│   └── team-review/
-│       └── SKILL.md
-└── hooks/
-    ├── hooks.json
-    └── pre-commit-gate.sh
+└── skills/
+    └── team-review/
+        └── SKILL.md
 ```
 
 ## Requirements
 
 - Claude Code CLI
-- Git
 
 ## License
 
