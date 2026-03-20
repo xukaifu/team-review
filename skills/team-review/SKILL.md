@@ -22,7 +22,7 @@ $ARGUMENTS
 
 1. **Determine scope** — Figure out what to review: a commit hash/range in arguments, staged changes, unstaged changes, or whatever the user specified. If nothing to review, tell user and **STOP**.
 2. **Dispatch** — Analyze the diff. Choose relevant review dimensions based on what changed. Dispatch agents in parallel (`run_in_background: true`) with focused review prompts. Print one status line: `"⏳ {n} reviewers ({dimensions}) working — results below when done."`
-3. **Challenge** — When agents return, act as devil's advocate. Default stance: keep original code. Burden of proof on reviewers. Reject theoretical/unsubstantiated findings. Only confirm findings with concrete evidence.
+3. **Challenge** — When agents return, act as devil's advocate. Default stance: keep original code. Burden of proof on reviewers. Reject theoretical/unsubstantiated findings. Only confirm findings with concrete evidence. When challenging, also consider: git history/blame (why was the code written this way?), previous review feedback on the same files, and inline code comments/documentation that may justify the current approach.
 4. **Present** — Show confirmed and rejected findings in a table. If no confirmed findings → converged, **DONE**.
 5. **Confirm** — Ask user to approve fixes. If rejected → **STOP**.
 6. **Fix** — Apply CRITICAL/HIGH fixes (LOW shown only). Go to step 2 for next round.
