@@ -1,6 +1,6 @@
 # team-review
 
-A Claude Code plugin that reviews staged changes with dynamically chosen parallel agents and adversarial challenge.
+A Claude Code plugin that reviews code changes with dynamically chosen parallel reviewers and adversarial challenge.
 
 ## Install
 
@@ -12,14 +12,15 @@ A Claude Code plugin that reviews staged changes with dynamically chosen paralle
 ## Usage
 
 ```
-/team-review [n] [guidance]
+/team-review [n | commit] [guidance]
 ```
 
 | Command | Effect |
 |---------|--------|
-| `/team-review` | Review staged changes (1 round) |
+| `/team-review` | Review current changes (1 round) |
 | `/team-review 3` | Review with up to 3 rounds |
 | `/team-review 3 focus on SQL injection` | Review with guidance |
+| `/team-review abc123` | Review a specific commit |
 
 ## How It Works
 

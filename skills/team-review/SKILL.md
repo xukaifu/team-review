@@ -26,3 +26,5 @@ $ARGUMENTS
 4. **Present** — Show confirmed and rejected findings in a table. If no confirmed findings → converged, **DONE**.
 5. **Confirm** — Ask user to approve fixes. If rejected → **STOP**.
 6. **Fix** — Apply CRITICAL/HIGH fixes (LOW shown only). Go to step 2 for next round.
+
+If an agent fails or times out, note it in the results and proceed with available findings.

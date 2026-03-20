@@ -1,11 +1,11 @@
 {
   "name": "team-review",
   "version": "1.1.0",
-  "description": "Claude Code plugin that reviews staged changes with dynamically chosen parallel reviewers and adversarial challenge.",
+  "description": "Claude Code plugin that reviews code changes with dynamically chosen parallel reviewers and adversarial challenge.",
   "author": {
     "name": "xukaifu"
   },
   "license": "MIT",
   "repository": "https://github.com/xukaifu/team-review",
-  "keywords": ["code-review", "quality-gate", "adversarial", "parallel-review"]
+  "keywords": ["code-review", "adversarial", "parallel-review"]
 }
